@@ -135,7 +135,7 @@ function apiGenerate_(data) {
   var sceneRow = findSceneRow_(data.sceneId);
   var recent = candidate ? recentHistoryFor_(candidate.id, 5) : [];
 
-  var systemText = buildSystemPrompt_(levelRow, sceneRow, settings);
+  var systemText = buildSystemPrompt_(levelRow, sceneRow, settings, type);
   var userText = buildUserPrompt_({
     type: type,
     candidate: candidate || { name: data.newName || '', call_name: '' },
@@ -191,7 +191,7 @@ function apiRevise_(data) {
   var levelRow = hrow ? findLevelRow_(hrow.level) : null;
   var sceneRow = hrow ? findSceneRow_(hrow.scene_id) : null;
 
-  var systemText = buildSystemPrompt_(levelRow, sceneRow, settings);
+  var systemText = buildSystemPrompt_(levelRow, sceneRow, settings, 'revise');
   var userText = buildRevisePrompt_(data.currentMessages, data.instruction, levelRow, sceneRow);
   var variant = reviseVariant_(systemText, userText, modelKey);
 

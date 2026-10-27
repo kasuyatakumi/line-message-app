@@ -5,4 +5,4 @@
  *
  * 例: const GAS_URL = 'https://script.google.com/macros/s/XXXXXXXX/exec';
  */
-const GAS_URL = 'ここにGASのウェブアプリURLを貼り付け';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbyPxHOLXkbP6uaVkEOnOy2O-JVI5SkPlQ4ud0SEKAXXbOB0AOaFTh5Je-ZZQvEBuKvT/exec';

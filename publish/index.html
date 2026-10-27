@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#06c755">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="LINE文面">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="./style.css">
+  <title>LINE文面作成アプリ</title>
+</head>
+<body>
+
+<!-- S01 ログイン -->
+<section id="screen-login" class="screen login-screen">
+  <div class="login-box">
+    <div class="login-logo">LINE文面</div>
+    <p class="login-sub">パスコードを入力してください</p>
+    <div class="passcode-row">
+      <input id="passcode" type="password" inputmode="numeric" autocomplete="off" placeholder="パスコード" aria-label="パスコード">
+      <button id="passcode-toggle" type="button" class="icon-btn" aria-label="表示切替">表示</button>
+    </div>
+    <button id="login-btn" class="primary-btn">ログイン</button>
+    <p id="login-msg" class="login-msg" role="alert"></p>
+  </div>
+</section>
+
+<!-- アプリ本体 -->
+<div id="app" class="app hidden">
+  <header class="app-header">
+    <span id="header-title" class="header-title">作成</span>
+  </header>
+
+  <main class="app-main">
+
+    <!-- S02 作成 -->
+    <section id="tab-create" class="tab-panel">
+      <div class="field">
+        <label class="field-label">求職者</label>
+        <button id="create-candidate" class="selector-btn" type="button"><span id="create-candidate-name">指定なし</span><span class="chev">›</span></button>
+      </div>
+      <div class="field">
+        <label class="field-label">レベル</label>
+        <div id="create-levels" class="level-row"></div>
+      </div>
+      <div class="field">
+        <label class="field-label">シーン</label>
+        <div id="create-scenes" class="scene-scroll"></div>
+      </div>
+      <div class="field">
+        <label class="field-label">送りたい内容</label>
+        <textarea id="create-input" rows="5" placeholder="伝えたいことをざっくり入力（箇条書き・話し言葉OK）"></textarea>
+        <div class="field-actions">
+          <button id="create-fav" class="ghost-btn" type="button">お気に入りから入れる</button>
+        </div>
+      </div>
+      <button id="create-generate" class="primary-btn" disabled>文面を作る</button>
+    </section>
+
+    <!-- S04 返信 -->
+    <section id="tab-reply" class="tab-panel hidden">
+      <div class="field">
+        <label class="field-label">求職者</label>
+        <button id="reply-candidate" class="selector-btn" type="button"><span id="reply-candidate-name">指定なし</span><span class="chev">›</span></button>
+      </div>
+      <div class="field">
+        <label class="field-label">レベル</label>
+        <div id="reply-levels" class="level-row"></div>
+      </div>
+      <div class="field">
+        <label class="field-label">届いたLINE</label>
+        <textarea id="reply-received" rows="5" placeholder="相手から届いたLINEを貼り付け"></textarea>
+        <div class="field-actions">
+          <button id="reply-paste" class="ghost-btn" type="button">貼り付け</button>
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label">どう返したい？（任意）</label>
+        <textarea id="reply-input" rows="3" placeholder="空ならAIが返し方も提案します"></textarea>
+      </div>
+      <button id="reply-generate" class="primary-btn" disabled>返信を作る</button>
+    </section>
+
+    <!-- S05 求職者一覧 -->
+    <section id="tab-candidates" class="tab-panel hidden">
+      <div class="search-row">
+        <input id="cand-search" type="search" placeholder="名前で検索">
+        <select id="cand-status-filter" aria-label="選考状況で絞り込み">
+          <option value="">すべての状況</option>
+        </select>
+      </div>
+      <button id="cand-add" class="ghost-btn block" type="button">＋ 新しい求職者を追加</button>
+      <div id="cand-list" class="list"></div>
+    </section>
+
+    <!-- S07 履歴 -->
+    <section id="tab-history" class="tab-panel hidden">
+      <div class="search-row">
+        <input id="hist-search" type="search" placeholder="本文・内容・名前で検索">
+      </div>
+      <div class="filter-row">
+        <select id="hist-period" aria-label="期間">
+          <option value="all">すべての期間</option>
+          <option value="today">今日</option>
+          <option value="7d">7日</option>
+          <option value="30d">30日</option>
+        </select>
+        <select id="hist-level" aria-label="レベル"><option value="">全レベル</option></select>
+        <label class="check"><input id="hist-fav" type="checkbox"> お気に入り</label>
+      </div>
+      <div id="hist-list" class="list"></div>
+      <button id="hist-more" class="ghost-btn block hidden" type="button">もっと見る</button>
+    </section>
+
+    <!-- S08 設定 -->
+    <section id="tab-settings" class="tab-panel hidden">
+      <div class="field">
+        <label class="field-label">署名・名乗り方</label>
+        <textarea id="set-signature" rows="2" placeholder="例：人材紹介の〇〇です"></textarea>
+      </div>
+      <div class="field">
+        <label class="field-label">文体ルール</label>
+        <textarea id="set-style" rows="2" placeholder="例：絵文字は控えめ、かたすぎない"></textarea>
+      </div>
+      <div class="field">
+        <label class="field-label">NG表現（使わない言葉）</label>
+        <textarea id="set-ng" rows="2" placeholder="例：絶対、必ず"></textarea>
+      </div>
+      <div class="field">
+        <label class="field-label">AIモデル</label>
+        <div class="seg">
+          <button class="seg-btn" data-model="sonnet" type="button">品質重視</button>
+          <button class="seg-btn" data-model="haiku" type="button">速さ重視</button>
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label">ログイン保持期間（日）</label>
+        <input id="set-days" type="number" min="1" max="365" value="30">
+      </div>
+      <button id="set-save" class="primary-btn">設定を保存</button>
+      <div class="settings-links">
+        <a id="set-open-sheet" href="#" target="_blank" rel="noopener">スプレッドシートを開く</a>
+        <button id="set-logout" class="ghost-btn" type="button">ログアウト</button>
+      </div>
+      <p class="muted small">シーンの表示・並び替え・追加は、スプレッドシートの scenes シートで編集できます。</p>
+    </section>
+
+  </main>
+
+  <!-- 下部タブ -->
+  <nav class="tabbar">
+    <button class="tabbar-btn active" data-tab="create"><span class="tab-ico">✍️</span>作成</button>
+    <button class="tabbar-btn" data-tab="reply"><span class="tab-ico">↩️</span>返信</button>
+    <button class="tabbar-btn" data-tab="candidates"><span class="tab-ico">👤</span>求職者</button>
+    <button class="tabbar-btn" data-tab="history"><span class="tab-ico">🕘</span>履歴</button>
+    <button class="tabbar-btn" data-tab="settings"><span class="tab-ico">⚙️</span>設定</button>
+  </nav>
+</div>
+
+<!-- S03 結果（全画面オーバーレイ） -->
+<section id="screen-result" class="overlay hidden">
+  <header class="overlay-header">
+    <button id="result-back" class="text-btn" type="button">‹ 戻る</button>
+    <span class="overlay-title">文面の候補</span>
+    <button id="result-regen" class="text-btn" type="button">作り直す</button>
+  </header>
+  <div id="result-cards" class="overlay-body"></div>
+</section>
+
+<!-- S06 求職者詳細（全画面オーバーレイ） -->
+<section id="screen-candidate" class="overlay hidden">
+  <header class="overlay-header">
+    <button id="cd-back" class="text-btn" type="button">‹ 戻る</button>
+    <span class="overlay-title">求職者</span>
+    <button id="cd-save" class="text-btn" type="button">保存</button>
+  </header>
+  <div id="cd-body" class="overlay-body"></div>
+</section>
+
+<!-- M01 お気に入り（小窓） -->
+<div id="modal-fav" class="modal hidden">
+  <div class="sheet">
+    <div class="sheet-head"><span>お気に入り</span><button class="text-btn" data-close="modal-fav" type="button">閉じる</button></div>
+    <select id="fav-scene-filter" aria-label="シーンで絞り込み"><option value="">すべてのシーン</option></select>
+    <div id="fav-list" class="list"></div>
+  </div>
+</div>
+
+<!-- M02 求職者選択（小窓） -->
+<div id="modal-cand" class="modal hidden">
+  <div class="sheet">
+    <div class="sheet-head"><span>求職者を選ぶ</span><button class="text-btn" data-close="modal-cand" type="button">閉じる</button></div>
+    <input id="cand-pick-search" type="search" placeholder="名前で検索・新しい名前を入力">
+    <button id="cand-pick-none" class="ghost-btn block" type="button">指定なしにする</button>
+    <button id="cand-pick-new" class="ghost-btn block hidden" type="button"></button>
+    <div id="cand-pick-list" class="list"></div>
+  </div>
+</div>
+
+<!-- 共通：トースト・ローディング -->
+<div id="toast" class="toast hidden"></div>
+<div id="loading" class="loading hidden">
+  <div class="spinner"></div>
+  <p id="loading-text">文面を考えています…</p>
+  <button id="loading-retry" class="ghost-btn hidden" type="button">もう一度</button>
+</div>
+
+<script src="./config.js"></script>
+<script src="./api.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>

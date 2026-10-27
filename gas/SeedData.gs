@@ -68,6 +68,6 @@ var SEED_SETTINGS = {
   signature: '',
   style_rules: '',
   ng_words: '',
-  model: 'sonnet',
+  model: 'haiku', // 速さ優先。品質を上げたいときは設定でsonnetに切り替え
   session_days: '30'
 };

@@ -1,0 +1,16 @@
+{
+  "name": "LINE文面作成アプリ",
+  "short_name": "LINE文面",
+  "description": "求職者へ送るLINE文面をかんたん作成",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#06c755",
+  "theme_color": "#06c755",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "./icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "./icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
