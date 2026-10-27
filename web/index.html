@@ -84,18 +84,6 @@
       <button id="reply-generate" class="primary-btn" disabled>返信を作る</button>
     </section>
 
-    <!-- S05 求職者一覧 -->
-    <section id="tab-candidates" class="tab-panel hidden">
-      <div class="search-row">
-        <input id="cand-search" type="search" placeholder="名前で検索">
-        <select id="cand-status-filter" aria-label="選考状況で絞り込み">
-          <option value="">すべての状況</option>
-        </select>
-      </div>
-      <button id="cand-add" class="ghost-btn block" type="button">＋ 新しい求職者を追加</button>
-      <div id="cand-list" class="list"></div>
-    </section>
-
     <!-- S07 履歴 -->
     <section id="tab-history" class="tab-panel hidden">
       <div class="search-row">
@@ -154,7 +142,6 @@
   <nav class="tabbar">
     <button class="tabbar-btn active" data-tab="create"><span class="tab-ico">✍️</span>作成</button>
     <button class="tabbar-btn" data-tab="reply"><span class="tab-ico">↩️</span>返信</button>
-    <button class="tabbar-btn" data-tab="candidates"><span class="tab-ico">👤</span>求職者</button>
     <button class="tabbar-btn" data-tab="history"><span class="tab-ico">🕘</span>履歴</button>
     <button class="tabbar-btn" data-tab="settings"><span class="tab-ico">⚙️</span>設定</button>
   </nav>
@@ -168,16 +155,6 @@
     <button id="result-regen" class="text-btn" type="button">作り直す</button>
   </header>
   <div id="result-cards" class="overlay-body"></div>
-</section>
-
-<!-- S06 求職者詳細（全画面オーバーレイ） -->
-<section id="screen-candidate" class="overlay hidden">
-  <header class="overlay-header">
-    <button id="cd-back" class="text-btn" type="button">‹ 戻る</button>
-    <span class="overlay-title">求職者</span>
-    <button id="cd-save" class="text-btn" type="button">保存</button>
-  </header>
-  <div id="cd-body" class="overlay-body"></div>
 </section>
 
 <!-- M01 お気に入り（小窓） -->

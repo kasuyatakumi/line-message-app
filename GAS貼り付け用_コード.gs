@@ -584,8 +584,8 @@ function buildSystemPrompt_(levelRow, sceneRow, settings, type) {
     } else {
       parts.push([
         '【出力形式】次のJSONだけを出力する。前後に説明文やコードブロック記号（```）を付けない。',
-        '{"variants":[{"label":"標準","messages":["吹き出し1","吹き出し2"]},{"label":"丁寧め","messages":["..."]},{"label":"背中を押す","messages":["..."]}]}',
-        '・3案を、性格を変えて作る（標準／丁寧め／背中を押す など）。',
+        '{"variants":[{"label":"標準","messages":["吹き出し1","吹き出し2"]},{"label":"背中を押す","messages":["..."]}]}',
+        '・2案を、性格を変えて作る（1案目は標準、2案目はより前向きに背中を押す）。',
         '・messagesの1要素＝LINEの吹き出し1つ。',
         '・Lv1〜2は必要に応じて2〜3要素に分ける。Lv4〜5は原則1要素。'
       ].join('\n'));

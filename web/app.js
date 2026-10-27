@@ -1,6 +1,7 @@
 /**
  * app.js — 画面制御
- * 5タブ（作成/返信/求職者/履歴/設定）と、結果・求職者詳細・2つの小窓を操作する。
+ * 4タブ（作成/返信/履歴/設定）と、結果・2つの小窓を操作する。
+ * （求職者の選択・自動登録は「作成/返信」の求職者欄＝M02で行う。一覧タブは非表示。）
  */
 'use strict';
 const $ = (id) => document.getElementById(id);
@@ -50,14 +51,13 @@ async function copyText(text) {
 function showLogin() { $('screen-login').classList.remove('hidden'); $('app').classList.add('hidden'); }
 function showApp() { $('screen-login').classList.add('hidden'); $('app').classList.remove('hidden'); }
 
-const TAB_TITLE = { create: '作成', reply: '返信', candidates: '求職者', history: '履歴', settings: '設定' };
+const TAB_TITLE = { create: '作成', reply: '返信', history: '履歴', settings: '設定' };
 function showTab(name) {
-  ['create', 'reply', 'candidates', 'history', 'settings'].forEach((t) => {
+  ['create', 'reply', 'history', 'settings'].forEach((t) => {
     $('tab-' + t).classList.toggle('hidden', t !== name);
   });
   document.querySelectorAll('.tabbar-btn').forEach((b) => b.classList.toggle('active', b.dataset.tab === name));
   $('header-title').textContent = TAB_TITLE[name];
-  if (name === 'candidates') renderCandidateList();
   if (name === 'history') { state.history.page = 0; runHistorySearch(true); }
 }
 
@@ -70,7 +70,6 @@ async function init() {
   bindTabs();
   bindCreate();
   bindReply();
-  bindCandidates();
   bindHistory();
   bindSettings();
   bindModals();
@@ -105,7 +104,6 @@ function applyData() {
   renderLevelButtons('create-levels', 'create');
   renderLevelButtons('reply-levels', 'reply');
   renderSceneButtons();
-  fillStatusFilter();
   fillHistoryLevelFilter();
   fillSceneFilter();
   applySettingsToForm();
@@ -425,104 +423,6 @@ async function deleteFav(id) {
   } catch (e) { handleError(e); }
 }
 
-/* ============ S05 求職者一覧 ============ */
-function bindCandidates() {
-  $('cand-search').addEventListener('input', renderCandidateList);
-  $('cand-status-filter').addEventListener('change', renderCandidateList);
-  $('cand-add').onclick = () => openCandidateDetail(null);
-}
-function renderCandidateList() {
-  const box = $('cand-list'); box.innerHTML = '';
-  const q = $('cand-search').value.trim();
-  const status = $('cand-status-filter').value;
-  let list = (state.data.candidates || []).filter((c) => (!q || (c.name || '').indexOf(q) >= 0) && (!status || c.status === status));
-  list = list.slice().sort((a, b) => String(b.last_contact_at || '').localeCompare(String(a.last_contact_at || '')));
-  if (!list.length) { box.appendChild(el('p', 'muted small', '該当する求職者がいません')); return; }
-  list.forEach((c) => {
-    const item = el('div', 'list-item');
-    item.innerHTML = '<div class="li-top"><span class="li-name">' + esc(c.name) + '</span><span class="li-badge">Lv' + esc(c.level) + '</span></div>' +
-      '<div class="li-sub">' + esc(c.status || '') + '　最終連絡: ' + esc(c.last_contact_at || '—') + '</div>';
-    item.onclick = () => openCandidateDetail(c);
-    box.appendChild(item);
-  });
-}
-function fillStatusFilter() {
-  const statuses = ['面談前', '求人提案中', '選考中', '内定', '入社', '辞退・休止'];
-  const sel = $('cand-status-filter');
-  sel.innerHTML = '<option value="">すべての状況</option>' + statuses.map((s) => '<option>' + s + '</option>').join('');
-}
-
-/* ============ S06 求職者詳細 ============ */
-const STATUSES = ['面談前', '求人提案中', '選考中', '内定', '入社', '辞退・休止'];
-function openCandidateDetail(c) {
-  const body = $('cd-body'); body.innerHTML = '';
-  const isNew = !c;
-  c = c || { id: '', name: '', call_name: '', level: '2', age: '', experience: '', desired_job: '', status: '面談前', memo: '' };
-  const fields = [
-    ['name', '名前', 'text'], ['call_name', '呼び方', 'text'], ['age', '年齢', 'text'],
-    ['experience', '経験', 'text'], ['desired_job', '希望', 'text'], ['memo', 'メモ', 'textarea']
-  ];
-  const inputs = {};
-  // レベル
-  const lvWrap = el('div', 'cd-field'); lvWrap.appendChild(el('label', null, 'レベル'));
-  const lvSel = el('select'); levelList().forEach((lv) => { const o = el('option', null, 'Lv' + lv.level + ' ' + (lv.label || '')); o.value = lv.level; lvSel.appendChild(o); });
-  lvSel.value = c.level || '2'; lvWrap.appendChild(lvSel); body.appendChild(lvWrap);
-  // 状況
-  const stWrap = el('div', 'cd-field'); stWrap.appendChild(el('label', null, '選考状況'));
-  const stSel = el('select'); STATUSES.forEach((s) => { const o = el('option', null, s); o.value = s; stSel.appendChild(o); });
-  stSel.value = c.status || '面談前'; stWrap.appendChild(stSel); body.appendChild(stWrap);
-  // テキスト項目
-  fields.forEach(([key, label, type]) => {
-    const w = el('div', 'cd-field'); w.appendChild(el('label', null, label));
-    const i = type === 'textarea' ? el('textarea') : el('input');
-    i.value = c[key] || ''; inputs[key] = i; w.appendChild(i); body.appendChild(w);
-  });
-
-  // 操作ボタン（既存のみ）
-  if (!isNew) {
-    const acts = el('div', 'cd-actions');
-    const sendBtn = el('button', 'ghost-btn', 'この人に送る'); sendBtn.type = 'button';
-    sendBtn.onclick = () => { pickForTarget('create', c); closeOverlay('screen-candidate'); showTab('create'); };
-    const replyBtn = el('button', 'ghost-btn', 'この人に返信'); replyBtn.type = 'button';
-    replyBtn.onclick = () => { pickForTarget('reply', c); closeOverlay('screen-candidate'); showTab('reply'); };
-    acts.appendChild(sendBtn); acts.appendChild(replyBtn); body.appendChild(acts);
-
-    body.appendChild(el('label', 'field-label', 'やり取り履歴'));
-    body.appendChild(renderTimeline(c.id));
-  }
-
-  $('cd-save').onclick = async () => {
-    const payload = { id: c.id, level: lvSel.value, status: stSel.value };
-    Object.keys(inputs).forEach((k) => payload[k] = inputs[k].value);
-    if (!payload.name.trim()) { toast('名前を入力してください'); return; }
-    try {
-      const res = await Api.saveCandidate(payload);
-      const i = state.data.candidates.findIndex((x) => x.id === res.candidate.id);
-      if (i >= 0) state.data.candidates[i] = res.candidate; else state.data.candidates.push(res.candidate);
-      Store.set(Store.BOOTSTRAP, state.data);
-      toast('保存しました'); closeOverlay('screen-candidate'); renderCandidateList();
-    } catch (e) { handleError(e); }
-  };
-  $('screen-candidate').classList.remove('hidden');
-}
-function pickForTarget(which, c) {
-  const st = state[which];
-  st.candidateId = c.id; st.candidateName = c.name; st.newName = ''; st.level = String(c.level || '2');
-  renderLevelButtons(which + '-levels', which); updateCandidateLabels();
-}
-function renderTimeline(candidateId) {
-  const wrap = el('div', 'timeline');
-  const items = (state.data.recentHistory || []).filter((h) => String(h.candidate_id) === String(candidateId))
-    .sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
-  if (!items.length) { wrap.appendChild(el('p', 'muted small', 'まだやり取りがありません')); return wrap; }
-  items.forEach((h) => {
-    if (h.received_text) wrap.appendChild(el('div', 'tl-item tl-them', h.received_text));
-    if (h.final_text) wrap.appendChild(el('div', 'tl-item tl-me', h.final_text));
-    wrap.appendChild(el('div', 'tl-date', h.created_at));
-  });
-  return wrap;
-}
-
 /* ============ S07 履歴 ============ */
 let histTimer = null;
 function bindHistory() {
@@ -630,7 +530,6 @@ function bindModals() {
     const st = state[state.pickTarget]; st.candidateId = ''; st.newName = ''; st.candidateName = '指定なし';
     closeModal('modal-cand'); updateCandidateLabels();
   };
-  $('cd-back').onclick = () => closeOverlay('screen-candidate');
 }
 function closeModal(id) { $(id).classList.add('hidden'); }
 function closeOverlay(id) { $(id).classList.add('hidden'); }
