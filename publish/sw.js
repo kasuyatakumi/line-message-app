@@ -4,7 +4,7 @@
  * 更新はキャッシュ名のバージョンを上げると次回起動時に反映される。
  * （GASへの通信結果はキャッシュしない。画面の見た目ファイルだけ。）
  */
-const CACHE_VERSION = 'v3';
+const CACHE_VERSION = 'v4';
 const CACHE_NAME = 'line-app-' + CACHE_VERSION;
 const ASSETS = [
   './',
