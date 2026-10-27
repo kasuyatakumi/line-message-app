@@ -468,7 +468,9 @@ var MODEL_MAP = {
   sonnet: 'claude-sonnet-5-5',
   haiku: 'claude-haiku-5-5'
 };
-var MAX_TOKENS = 1500;
+// 企業からの案内文を原文のまま2案に載せると長くなるため、余裕を持たせる。
+// 小さいと出力JSONが途中で切れて「形が崩れています」になる。
+var MAX_TOKENS = 4000;
 
 /** model設定（'sonnet'|'haiku'）から実際のモデルIDを返す。既定は sonnet。 */
 function resolveModel_(modelKey) {
@@ -712,7 +714,13 @@ function extractJson_(text) {
   try {
     return JSON.parse(slice);
   } catch (e) {
-    return null;
+    // よくある崩れ（配列・オブジェクト末尾の余分なカンマ）だけ直してもう一度試す
+    try {
+      var fixed = slice.replace(/,\s*([}\]])/g, '$1');
+      return JSON.parse(fixed);
+    } catch (e2) {
+      return null;
+    }
   }
 }
 
