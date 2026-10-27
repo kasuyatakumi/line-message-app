@@ -1,0 +1,9 @@
+{
+  "name": "line-message-app",
+  "version": "0.1.0",
+  "private": true,
+  "description": "人材紹介向け LINE文面作成アプリ（GAS + PWA）のGASロジックテスト",
+  "scripts": {
+    "test": "node --test tests/gas.test.js"
+  }
+}
