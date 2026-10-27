@@ -10,7 +10,7 @@
 人材紹介エージェント（ユーザー＝たくみさん）が、求職者へ**個人LINE**で送る文面を作るためのスマホ向けアプリ。
 
 - 送りたい内容を「ざっくり」入力（箇条書き・話し言葉・キーボードの音声入力）→ 求職者のレベルに合ったLINE文面を3案生成 → ワンタップでコピーしてLINEに貼り付ける
-- 求職者から届いたLINEを貼り付けると、返信案を3案生成する
+- 求職者から届いたLINEを貼り付けると、返信案を2案生成する
 - 求職者の大半は若手・就業経験少なめ。中堅・ハイクラスもたまにいるため、**5段階のレベル**で書き分ける
 - 利用者は当面ユーザー1人。将来CAメンバーに展開できる作りにする
 - 個人情報（求職者の氏名等）をAIに送ることはユーザー承認済み
@@ -36,7 +36,7 @@
 - フロントからの fetch は `Content-Type: text/plain;charset=utf-8`（CORSのプリフライトを避ける）、`redirect: 'follow'`
 - GAS のレスポンスは `ContentService.createTextOutput(JSON.stringify(...)).setMimeType(ContentService.MimeType.JSON)`
 - フレームワークは使わない（Vanilla JS）。外部ライブラリが必要な場合も CDN 1本程度に留める
-- AIモデル: 標準 `claude-sonnet-5-5`（品質重視）、設定で `claude-haiku-5-5`（速さ重視）に切替
+- AIモデル: 既定 `claude-haiku-5-5`（速さ重視）、設定で `claude-sonnet-5-5`（品質重視）に切替
   - エンドポイント `https://api.anthropic.com/v1/messages`、ヘッダ `x-api-key` / `anthropic-version: 2023-06-01`
   - GAS からは `UrlFetchApp.fetch(..., {muteHttpExceptions: true})`
 - タイムゾーンは `Asia/Tokyo`。日時は `yyyy-MM-dd HH:mm` 形式の文字列で保存
@@ -80,7 +80,7 @@ GAS への反映は、可能なら `@google/clasp` を使う（`gas/` を push�
 | --- | --- | --- |
 | S01 | ログイン | パスコード入力（表示切替つき）。5回連続失敗で10分ロック。成功でトークンを保存しS02へ |
 | S02 | 作成（ホーム） | 求職者欄（タップでM02。未選択は「指定なし」。選ぶとレベル・呼び方を自動セット）／レベル Lv1〜5 のボタン（手動変更はその回だけ）／シーン（フェーズ別の横スクロールボタン、初期値「自由入力」）／内容入力（複数行、シーンごとの入力例を placeholder 表示、キーボード音声入力で入力可。**アプリ独自の音声ボタンは作らない**）／お気に入りボタン（M01）／生成ボタン（内容が空なら無効）。入力途中の内容は localStorage に一時保存 |
-| S03 | 結果 | 3案をカードで縦並び。各カードに特徴ラベル。複数吹き出しの案はLINE風吹き出しで分けて表示し、吹き出しごとにコピー。カード下部「全部コピー」「お気に入り」「手直し」。手直しボタン：短く／丁寧に／くだけて／絵文字なし／絵文字多め／分ける／まとめる＋自由入力。本文タップで直接編集可。コピー時「コピーしました」トースト＋裏で markCopied。「作り直す」で同条件再生成 |
+| S03 | 結果 | 生成した案（作成3案 / 返信2案）をカードで縦並び。各カードに特徴ラベル。複数吹き出しの案はLINE風吹き出しで分けて表示し、吹き出しごとにコピー。カード下部「全部コピー」「お気に入り」「手直し」。手直しボタン：短く／丁寧に／くだけて／絵文字なし／絵文字多め／分ける／まとめる＋自由入力。本文タップで直接編集可。コピー時「コピーしました」トースト＋裏で markCopied。「作り直す」で同条件再生成 |
 | S04 | 返信 | 求職者欄・レベル（S02と同じ）／「届いたLINE」大きめ貼り付け欄＋「貼り付け」ボタン（Clipboard API）／「どう返したいか」（任意。空ならAIが返し方も提案）→ S03へ |
 | S05 | 求職者一覧 | 名前検索、選考状況で絞り込み。最終連絡日の新しい順。1行：名前、レベル、選考状況、最終連絡日 |
 | S06 | 求職者詳細 | 基本情報（タップで編集）／「この人に送る」「この人に返信」（S02/S04を選択済みで開く）／やり取り履歴をLINE風に時系列表示（受け取ったLINE＝左、コピーした文面＝右） |
@@ -129,7 +129,7 @@ ID は自動採番（C0001 / H000001 / F001 / SC01）。setup 時に全列を書
 - **favorites**: id, title, scene_id, level, body（差し替え箇所は【名前】【日時】）, use_count, created_at
 - **scenes**: id, phase, name, hint, guide, order, active
 - **levels**: level, label, rules, example
-- **settings**（key/value の2列）: signature, style_rules, ng_words, model(sonnet|haiku), session_days(初期30)
+- **settings**（key/value の2列）: signature, style_rules, ng_words, model(sonnet|haiku、初期 haiku), session_days(初期30)
 - **sessions**: token, created_at, expires_at, last_used_at, device
 
 ## 8. API（GAS doPost）
@@ -145,7 +145,7 @@ ID は自動採番（C0001 / H000001 / F001 / SC01）。setup 時に全列を書
 | login | passcode, device | token, expiresAt |
 | logout | なし | なし |
 | bootstrap | なし | candidates, scenes, levels, favorites, settings, recentHistory（直近50件）, spreadsheetUrl |
-| generate | type(create/reply), candidateId または newName, level, sceneId, inputText, receivedText | historyId, variants（3案）, candidate（自動登録した場合） |
+| generate | type(create/reply), candidateId または newName, level, sceneId, inputText, receivedText | historyId, variants（作成3案 / 返信2案）, candidate（自動登録した場合） |
 | revise | historyId, variantIndex, currentMessages, instruction | variant（1案） |
 | markCopied | historyId, finalText | なし（history.final_text/copied_at、candidates.last_contact_at を更新） |
 | searchHistory | keyword, candidateId, sceneId, level, period(today/7d/30d/all), favoriteOnly, page | items（20件ずつ、新しい順）, hasMore |
@@ -154,43 +154,48 @@ ID は自動採番（C0001 / H000001 / F001 / SC01）。setup 時に全列を書
 | deleteFavorite | id | なし |
 | saveSettings | settings, scenes | settings, scenes |
 
-**generate の処理順**: トークン確認 → newName があれば candidates に追加（同名は流用）→ 指示書を組み立てて Claude API → 出力形式を検証（崩れていれば1回だけ再生成）→ history に1行追加（copied_at は空）→ 3案を返す。
+**generate の処理順**: トークン確認 → newName があれば candidates に追加（同名は流用）→ 指示書を組み立てて Claude API → 出力形式を検証（崩れていれば1回だけ再生成）→ history に1行追加（copied_at は空）→ 案を返す（作成3案 / 返信2案）。
 
 ## 9. プロンプト設計
 
+`buildSystemPrompt_(levelRow, sceneRow, settings, type)` の `type` は `create` / `reply` / `revise`。type によって返信時の注意や出力形式を出し分ける（revise のときは出力形式を system に入れず user 側で指定する）。
+
 **system に入れるもの**（順に）
-1. 役割：人材紹介エージェントが個人LINEで求職者に送る文面を書くアシスタント
-2. 共通ルール
-   - 入力にない事実（日時・社名・金額など）は作らない。必要なのに不明な情報は【日時】のように空欄で残す
+1. 役割：人材紹介エージェント「澤井」本人に代わって個人LINE文面を書くアシスタント（澤井になりきる）
+2. 文体ルール（最優先。レベルの絵文字指定より優先）
+   - 明るく丁寧で少し腰が低い。感謝と気づかいを欠かさない
+   - 文末は「！」を基本に、あたたかく（付けすぎない。1文に1つ程度）
+   - 頻出フレーズ:「お世話になっております！」「本日はありがとうございました！」「承知いたしました！」「とんでもございません！」「恐れ入りますが」「お手数をおかけいたしますが」「〜いただけますと幸いです！」「引き続きよろしくお願いいたします！」
+   - お願いは「恐れ入りますが、〜いただけますと幸いです！」の形。お詫び・恐縮はやや手厚く（例「申し訳ございません。。。」）
+   - 絵文字は原則使わない（明るさは「！」で出す）。相手を否定せず前向きに背中を押す
    - 見出し・箇条書き記号・太字などの装飾は使わない（LINEで崩れる）。区切りは改行
-   - 日付は「10/28（火）14:00」の形。曜日は必ず下の日付早見表から取る
-   - 呼びかけは求職者の「呼び方」。指定なしなら「〇〇さん」
-   - 名乗りは初回のあいさつなど必要な場面だけ
-   - NG表現は使わない。文体ルールに従う
-   - 3案は「簡潔」「丁寧」「背中を押す」など性格の違う案にする
-   - 返信案では相手の質問すべてに答え、不安そうな点に一言触れる
-3. レベルのルール（levels シート該当行の label / rules / example）
-4. シーンの説明（scenes 該当行の name / guide）
-5. 名乗り方・文体ルール・NG表現（settings）
-6. 日付早見表：今日から30日分の「M/D（曜）」＋現在日時
-7. 出力形式（下記JSONのみ。前後に説明文を付けない）
+3. あいさつと締め：書き出しは原則「お世話になっております！」。初回や名乗り直後だけ「MISAWA GROUPの澤井です！」と名乗る（毎回は名乗らない）。面談・面接・電話の後は「本日は貴重なお時間を〜」。締めは「引き続きよろしくお願いいたします！」など前向きに
+4. 事実と引用の扱い
+   - 入力にない事実（日時・社名・金額・URL・会議ID・パスコードなど）は作らない。必要なのに不明なものは【日時】のように空欄で残す
+   - **企業から届いた案内文（面接案内・日程詳細・求人票・条件通知・提出物の案内・適性検査の案内など）は書き換え・要約・整形せず原文のまま載せる**。URL・会議ID・パスコード・日時・社名・フォームのリンク・区切り線は一字一句変えない。役割は前後に澤井のあいさつ・ひとことの案内・締めを添えることだけ
+   - 日付は「10/28（火）14:00」の形。曜日は必ず下の日付早見表から取る。呼びかけは求職者の「呼び方」。指定なしなら「〇〇さん」
+5. レベルのルール（levels 該当行の label / rules）＝文の長さ・敬語の硬さ・1通にまとめるか分けるかの目安として使う。絵文字の指定は無視し文体ルールを優先
+6. シーンの説明（scenes 該当行の name / guide）
+7. 返信時（type=reply）の注意：届いたLINEをよく読み相手の質問・依頼にすべて答える／不安・恐縮している点に一言寄り添う／お礼や報告はまず受け止めて感謝し、必要なら次の一歩を案内
+8. ユーザー個別設定（settings の signature / style_rules / ng_words。あれば優先）
+9. 日付早見表：今日から30日分の「M/D（曜）」＋現在日時
+10. 出力形式（revise 以外。下記JSONのみ。前後に説明文やコードブロック記号は付けない）
 
 **user メッセージに入れるもの**: 求職者情報（名前・呼び方・経験・希望・選考状況・メモ）、直近のやり取り（その求職者の history 直近5件：受け取ったLINE と final_text）、今回の入力（ざっくり内容、返信案なら届いたLINE＋返したい方向性。方向性が空なら「適切な返し方を提案」）。
 
-**出力形式**
+**出力形式**（type で出し分け）
+- 作成（create）＝3案（標準／丁寧め／背中を押す など性格を変える）
 ```json
-{
-  "variants": [
-    { "label": "簡潔", "messages": ["山田さん、こんばんは😊", "明日10/28（火）14:00から面接です！\n持ち物は履歴書です。10分前には着くようにしましょう👍"] },
-    { "label": "丁寧", "messages": ["…"] },
-    { "label": "背中を押す", "messages": ["…"] }
-  ]
-}
+{ "variants": [ { "label": "標準", "messages": ["吹き出し1", "吹き出し2"] }, { "label": "丁寧め", "messages": ["…"] }, { "label": "背中を押す", "messages": ["…"] } ] }
+```
+- 返信（reply）＝2案（1案目は標準、2案目はより丁寧・やわらかめ）
+```json
+{ "variants": [ { "label": "標準", "messages": ["吹き出し1"] }, { "label": "やわらかめ", "messages": ["吹き出し1", "吹き出し2"] } ] }
 ```
 - messages の1要素＝LINEの吹き出し1つ。Lv1〜2は必要に応じ2〜3要素、Lv4〜5は原則1要素
 - 応答テキストから最初の `{` 〜最後の `}` を取り出して JSON.parse。variants が1件以上・各 messages が空でない文字列配列であることを検証。3件超は切り捨て
 
-**手直し**: 「次の文面を、指示に従って直してください。指示されていない部分は変えない」＋選んだ案の messages＋修正指示（＋元のレベル・シーンのルール）。返すのは `{"variant": {"label": "...", "messages": [...]}}` の1案。history.revise_count を+1。
+**手直し（revise）**: 「次の文面を、指示に従って直してください。指示されていない部分は変えない」＋選んだ案の messages＋修正指示（＋元のレベル・シーンのルール）。system は上記の文体ルール等を入れつつ出力形式は入れず、user 側で `{"variant": {"label": "...", "messages": [...]}}` の1案を指定。history.revise_count を+1。
 
 ## 10. ログイン・キャッシュ・エラー処理
 
