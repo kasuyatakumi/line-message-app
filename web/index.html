@@ -59,10 +59,6 @@
     <!-- S04 返信 -->
     <section id="tab-reply" class="tab-panel hidden">
       <div class="field">
-        <label class="field-label">求職者</label>
-        <button id="reply-candidate" class="selector-btn" type="button"><span id="reply-candidate-name">指定なし</span><span class="chev">›</span></button>
-      </div>
-      <div class="field">
         <label class="field-label">レベル</label>
         <div id="reply-levels" class="level-row"></div>
       </div>
@@ -156,17 +152,6 @@
     <div class="sheet-head"><span>お気に入り</span><button class="text-btn" data-close="modal-fav" type="button">閉じる</button></div>
     <select id="fav-scene-filter" aria-label="シーンで絞り込み"><option value="">すべてのシーン</option></select>
     <div id="fav-list" class="list"></div>
-  </div>
-</div>
-
-<!-- M02 求職者選択（小窓） -->
-<div id="modal-cand" class="modal hidden">
-  <div class="sheet">
-    <div class="sheet-head"><span>求職者を選ぶ</span><button class="text-btn" data-close="modal-cand" type="button">閉じる</button></div>
-    <input id="cand-pick-search" type="search" placeholder="名前で検索・新しい名前を入力">
-    <button id="cand-pick-none" class="ghost-btn block" type="button">指定なしにする</button>
-    <button id="cand-pick-new" class="ghost-btn block hidden" type="button"></button>
-    <div id="cand-pick-list" class="list"></div>
   </div>
 </div>
 

@@ -9,10 +9,9 @@ const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls)
 
 const state = {
   data: null,
-  create: { candidateId: '', candidateName: '指定なし', newName: '', level: '2', sceneId: '' },
-  reply: { candidateId: '', candidateName: '指定なし', newName: '', level: '2' },
+  create: { level: '2', sceneId: '' },
+  reply: { level: '2' },
   result: null,      // { type, historyId, variants, request }
-  pickTarget: 'create',
   history: { page: 0, hasMore: false, items: [] }
 };
 
@@ -107,7 +106,6 @@ function applyData() {
   fillHistoryLevelFilter();
   fillSceneFilter();
   applySettingsToForm();
-  updateCandidateLabels();
   updateGenerateEnabled();
 }
 
@@ -204,13 +202,9 @@ function updateGenerateEnabled() {
   $('create-generate').disabled = $('create-input').value.trim() === '';
   $('reply-generate').disabled = $('reply-received').value.trim() === '';
 }
-function updateCandidateLabels() {
-  $('reply-candidate-name').textContent = state.reply.candidateName || '指定なし';
-}
 
 /* ============ S04 返信 ============ */
 function bindReply() {
-  $('reply-candidate').onclick = () => openCandidatePicker('reply');
   $('reply-received').addEventListener('input', updateGenerateEnabled);
   $('reply-generate').onclick = () => doGenerate('reply');
 }
@@ -219,8 +213,6 @@ function bindReply() {
 function buildGenerateRequest(which) {
   const st = state[which];
   const req = { type: which === 'reply' ? 'reply' : 'create', level: st.level, sceneId: which === 'create' ? state.create.sceneId : '' };
-  if (st.candidateId) req.candidateId = st.candidateId;
-  else if (st.newName) req.newName = st.newName;
   if (which === 'create') req.inputText = $('create-input').value.trim();
   else { req.receivedText = $('reply-received').value.trim(); req.inputText = $('reply-input').value.trim(); }
   return req;
@@ -231,10 +223,6 @@ async function doGenerate(which) {
   try {
     const data = await Api.generate(req);
     hideLoading();
-    if (data.candidate) {
-      state.data.candidates.push(data.candidate);
-      Store.set(Store.BOOTSTRAP, state.data);
-    }
     state.result = { type: req.type, historyId: data.historyId, variants: data.variants, request: req };
     renderResult();
     if (which === 'create') { $('create-input').value = ''; Store.remove(Store.DRAFT); updateGenerateEnabled(); }
@@ -329,12 +317,6 @@ async function doCopy(text, idx) {
   toast('コピーしました');
   // 裏でコピー記録（失敗時はキューへ）
   Api.markCopied(state.result.historyId, state.result.variants[idx].messages.join('\n'));
-  // 最終連絡日を手元のキャッシュにも反映
-  const req = state.result.request;
-  if (req && req.candidateId) {
-    const c = state.data.candidates.find((x) => x.id === req.candidateId);
-    if (c) { c.last_contact_at = nowStr(); Store.set(Store.BOOTSTRAP, state.data); }
-  }
 }
 function regenerate() {
   $('screen-result').classList.add('hidden');
@@ -350,45 +332,6 @@ async function saveVariantAsFavorite(idx) {
     state.data.favorites.push(fav.favorite); Store.set(Store.BOOTSTRAP, state.data);
     toast('お気に入りに追加しました');
   } catch (e) { handleError(e); }
-}
-
-/* ============ M02 求職者選択 ============ */
-function openCandidatePicker(target) {
-  state.pickTarget = target;
-  $('cand-pick-search').value = '';
-  $('cand-pick-new').classList.add('hidden');
-  renderPickList('');
-  $('modal-cand').classList.remove('hidden');
-}
-function renderPickList(q) {
-  const box = $('cand-pick-list'); box.innerHTML = '';
-  const list = (state.data.candidates || []).filter((c) => !q || (c.name || '').indexOf(q) >= 0);
-  list.slice(0, 50).forEach((c) => {
-    const item = el('div', 'list-item');
-    item.innerHTML = '<div class="li-top"><span class="li-name">' + esc(c.name) + '</span><span class="li-badge">Lv' + esc(c.level) + '</span></div><div class="li-sub">' + esc(c.status || '') + '</div>';
-    item.onclick = () => pickCandidate(c);
-    box.appendChild(item);
-  });
-  const newBtn = $('cand-pick-new');
-  if (q && !list.some((c) => c.name === q)) {
-    newBtn.textContent = '「' + q + '」を新しい求職者にする';
-    newBtn.classList.remove('hidden');
-    newBtn.onclick = () => pickNewName(q);
-  } else newBtn.classList.add('hidden');
-}
-function pickCandidate(c) {
-  const st = state[state.pickTarget];
-  st.candidateId = c.id; st.candidateName = c.name; st.newName = '';
-  st.level = String(c.level || st.level);
-  closeModal('modal-cand');
-  renderLevelButtons(state.pickTarget + '-levels', state.pickTarget);
-  updateCandidateLabels();
-}
-function pickNewName(name) {
-  const st = state[state.pickTarget];
-  st.candidateId = ''; st.newName = name; st.candidateName = name + '（新規）';
-  closeModal('modal-cand');
-  updateCandidateLabels();
 }
 
 /* ============ M01 お気に入り ============ */
@@ -532,11 +475,6 @@ function fillSceneFilter() {
 function bindModals() {
   document.querySelectorAll('[data-close]').forEach((b) => { b.onclick = () => closeModal(b.dataset.close); });
   document.querySelectorAll('.modal').forEach((m) => { m.addEventListener('click', (e) => { if (e.target === m) m.classList.add('hidden'); }); });
-  $('cand-pick-search').addEventListener('input', (e) => renderPickList(e.target.value.trim()));
-  $('cand-pick-none').onclick = () => {
-    const st = state[state.pickTarget]; st.candidateId = ''; st.newName = ''; st.candidateName = '指定なし';
-    closeModal('modal-cand'); updateCandidateLabels();
-  };
 }
 function closeModal(id) { $(id).classList.add('hidden'); }
 function closeOverlay(id) { $(id).classList.add('hidden'); }

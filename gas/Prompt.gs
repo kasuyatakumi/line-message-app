@@ -145,14 +145,15 @@ function buildUserPrompt_(opts) {
   var lines = [];
   var c = opts.candidate || {};
 
-  var info = ['【求職者情報】'];
-  info.push('名前: ' + (c.name || '（不明）'));
-  info.push('呼び方: ' + (c.call_name || '（指定なし）'));
+  // 求職者情報は、入力があるものだけ載せる（無ければブロックごと省略）
+  var info = [];
+  if (c.name) info.push('名前: ' + c.name);
+  if (c.call_name) info.push('呼び方: ' + c.call_name);
   if (c.experience) info.push('経験: ' + c.experience);
   if (c.desired_job) info.push('希望: ' + c.desired_job);
   if (c.status) info.push('選考状況: ' + c.status);
   if (c.memo) info.push('メモ: ' + c.memo);
-  lines.push(info.join('\n'));
+  if (info.length) lines.push('【求職者情報】\n' + info.join('\n'));
 
   if (opts.recent && opts.recent.length) {
     var hist = ['【直近のやり取り（古い順）】'];

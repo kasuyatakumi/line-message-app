@@ -604,14 +604,15 @@ function buildUserPrompt_(opts) {
   var lines = [];
   var c = opts.candidate || {};
 
-  var info = ['【求職者情報】'];
-  info.push('名前: ' + (c.name || '（不明）'));
-  info.push('呼び方: ' + (c.call_name || '（指定なし）'));
+  // 求職者情報は、入力があるものだけ載せる（無ければブロックごと省略）
+  var info = [];
+  if (c.name) info.push('名前: ' + c.name);
+  if (c.call_name) info.push('呼び方: ' + c.call_name);
   if (c.experience) info.push('経験: ' + c.experience);
   if (c.desired_job) info.push('希望: ' + c.desired_job);
   if (c.status) info.push('選考状況: ' + c.status);
   if (c.memo) info.push('メモ: ' + c.memo);
-  lines.push(info.join('\n'));
+  if (info.length) lines.push('【求職者情報】\n' + info.join('\n'));
 
   if (opts.recent && opts.recent.length) {
     var hist = ['【直近のやり取り（古い順）】'];
@@ -903,43 +904,32 @@ function apiGenerate_(data) {
   }
 
   var settings = readSettings_();
-  var modelKey = settings.model || 'sonnet';
+  var modelKey = settings.model || 'haiku';
 
-  // 求職者の特定 or 自動登録
-  var candidate = null;
-  var autoRegistered = null;
-  if (data.candidateId) {
-    candidate = findCandidateById_(data.candidateId);
-  } else if (data.newName) {
-    var existed = findCandidateByName_(data.newName);
-    candidate = registerCandidate_(data.newName, data.level);
-    if (!existed) autoRegistered = candidate;
-  }
-
-  var level = data.level || (candidate && candidate.level) || '2';
+  // 求職者機能は廃止。レベル＋シーン＋入力内容だけで生成する。
+  var level = data.level || '2';
   var levelRow = findLevelRow_(level);
   var sceneRow = findSceneRow_(data.sceneId);
-  var recent = candidate ? recentHistoryFor_(candidate.id, 5) : [];
 
   var systemText = buildSystemPrompt_(levelRow, sceneRow, settings, type);
   var userText = buildUserPrompt_({
     type: type,
-    candidate: candidate || { name: data.newName || '', call_name: '' },
-    recent: recent,
+    candidate: { name: '', call_name: '' },
+    recent: [],
     inputText: data.inputText || '',
     receivedText: data.receivedText || ''
   });
 
   var variants = generateVariants_(systemText, userText, modelKey);
 
-  // history に1行追加（copied_at は空）
+  // history に1行追加（copied_at は空。求職者には紐づけない）
   var historyId = nextId_('history');
   appendRecord_('history', {
     id: historyId,
     created_at: nowStr_(),
     type: type,
-    candidate_id: candidate ? candidate.id : '',
-    candidate_name: candidate ? candidate.name : (data.newName || ''),
+    candidate_id: '',
+    candidate_name: '',
     level: level,
     scene_id: data.sceneId || '',
     input_text: data.inputText || '',
@@ -952,9 +942,7 @@ function apiGenerate_(data) {
     model: modelKey
   });
 
-  var out = { historyId: historyId, variants: variants };
-  if (autoRegistered) out.candidate = autoRegistered;
-  return out;
+  return { historyId: historyId, variants: variants };
 }
 
 /**
@@ -966,7 +954,7 @@ function apiRevise_(data) {
   if (!Array.isArray(data.currentMessages)) throw appError_('BAD_REQUEST', '手直し対象の文面がありません');
 
   var settings = readSettings_();
-  var modelKey = settings.model || 'sonnet';
+  var modelKey = settings.model || 'haiku';
 
   // history 行から level / scene を引く
   var hrows = readAll_('history');

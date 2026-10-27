@@ -95,25 +95,17 @@ test('login_: 5回失敗でロック（6回目は LOCKED）', () => {
   assert.throws(() => h.sandbox.login_('password1', 'd'), (e) => e.appCode === 'LOCKED');
 });
 
-// ---- generate 自動登録 ----
-test('apiGenerate_: 新しい名前で求職者を自動登録し、履歴を1行追加', () => {
+// ---- generate（求職者機能は廃止） ----
+test('apiGenerate_: 履歴を1行追加し、求職者テーブルには触れない', () => {
   const h = freshWithSeed(goodFetch());
-  const out = h.sandbox.apiGenerate_({ type: 'create', newName: '山田太郎', level: '2', sceneId: 'SC01', inputText: '面接のリマインド' });
+  const out = h.sandbox.apiGenerate_({ type: 'create', level: '2', sceneId: 'SC01', inputText: '面接のリマインド' });
   assert.strictEqual(out.variants.length, 3);
   assert.ok(out.historyId.startsWith('H'));
-  assert.ok(out.candidate, '自動登録された求職者が返る');
-  assert.strictEqual(out.candidate.call_name, '山田太郎さん');
-  assert.strictEqual(h.rows('candidates').length, 1);
+  assert.strictEqual(out.candidate, undefined, '求職者は返さない');
+  assert.strictEqual(h.rows('candidates').length, 0, '求職者は登録しない');
   assert.strictEqual(h.rows('history').length, 1);
+  assert.strictEqual(h.rows('history')[0].candidate_id, '');
   assert.strictEqual(h.rows('history')[0].copied_at, '');
-});
-
-test('apiGenerate_: 同名は流用して重複登録しない', () => {
-  const h = freshWithSeed(goodFetch());
-  h.sandbox.apiGenerate_({ type: 'create', newName: '鈴木一郎', level: '2', inputText: 'あいさつ' });
-  const out2 = h.sandbox.apiGenerate_({ type: 'create', newName: '鈴木一郎', level: '2', inputText: '再度' });
-  assert.strictEqual(h.rows('candidates').length, 1, '同名は増えない');
-  assert.strictEqual(out2.candidate, undefined, '既存流用時は candidate を返さない');
 });
 
 // ---- AI出力の検証と再生成 ----
