@@ -39,16 +39,12 @@
     <!-- S02 作成 -->
     <section id="tab-create" class="tab-panel">
       <div class="field">
-        <label class="field-label">求職者</label>
-        <button id="create-candidate" class="selector-btn" type="button"><span id="create-candidate-name">指定なし</span><span class="chev">›</span></button>
-      </div>
-      <div class="field">
         <label class="field-label">レベル</label>
         <div id="create-levels" class="level-row"></div>
       </div>
       <div class="field">
         <label class="field-label">シーン</label>
-        <div id="create-scenes" class="scene-scroll"></div>
+        <div id="create-scenes" class="scene-wrap"></div>
       </div>
       <div class="field">
         <label class="field-label">送りたい内容</label>
@@ -72,10 +68,7 @@
       </div>
       <div class="field">
         <label class="field-label">届いたLINE</label>
-        <textarea id="reply-received" rows="5" placeholder="相手から届いたLINEを貼り付け"></textarea>
-        <div class="field-actions">
-          <button id="reply-paste" class="ghost-btn" type="button">貼り付け</button>
-        </div>
+        <textarea id="reply-received" rows="5" placeholder="相手から届いたLINEを長押しで貼り付け"></textarea>
       </div>
       <div class="field">
         <label class="field-label">どう返したい？（任意）</label>

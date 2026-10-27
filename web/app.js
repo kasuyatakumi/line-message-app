@@ -165,14 +165,27 @@ function renderSceneButtons() {
     const free = scenes.find((s) => s.name === '自由入力');
     if (free) state.create.sceneId = free.id;
   }
-  let lastPhase = '';
+  // フェーズごとにまとめ、チップは折り返して表示（横スクロールしない）
+  const groups = [];
   scenes.forEach((s) => {
-    if (s.phase && s.phase !== lastPhase) { box.appendChild(el('span', 'scene-phase', s.phase)); lastPhase = s.phase; }
-    const b = el('button', 'scene-btn', s.name);
-    b.type = 'button';
-    if (String(state.create.sceneId) === String(s.id)) b.classList.add('active');
-    b.onclick = () => { state.create.sceneId = s.id; renderSceneButtons(); applySceneHint(s); };
-    box.appendChild(b);
+    const phase = s.phase || '';
+    let g = groups.find((x) => x.phase === phase);
+    if (!g) { g = { phase, items: [] }; groups.push(g); }
+    g.items.push(s);
+  });
+  groups.forEach((g) => {
+    const grp = el('div', 'scene-group');
+    if (g.phase) grp.appendChild(el('div', 'scene-phase-head', g.phase));
+    const chips = el('div', 'scene-chips');
+    g.items.forEach((s) => {
+      const b = el('button', 'scene-btn', s.name);
+      b.type = 'button';
+      if (String(state.create.sceneId) === String(s.id)) b.classList.add('active');
+      b.onclick = () => { state.create.sceneId = s.id; renderSceneButtons(); applySceneHint(s); };
+      chips.appendChild(b);
+    });
+    grp.appendChild(chips);
+    box.appendChild(grp);
   });
   const cur = scenes.find((s) => String(s.id) === String(state.create.sceneId));
   if (cur) applySceneHint(cur);
@@ -183,7 +196,6 @@ function applySceneHint(scene) {
 
 /* ============ S02 作成 ============ */
 function bindCreate() {
-  $('create-candidate').onclick = () => openCandidatePicker('create');
   $('create-input').addEventListener('input', () => { Store.set(Store.DRAFT, { input: $('create-input').value }); updateGenerateEnabled(); });
   $('create-fav').onclick = () => openFavorites();
   $('create-generate').onclick = () => doGenerate('create');
@@ -193,7 +205,6 @@ function updateGenerateEnabled() {
   $('reply-generate').disabled = $('reply-received').value.trim() === '';
 }
 function updateCandidateLabels() {
-  $('create-candidate-name').textContent = state.create.candidateName || '指定なし';
   $('reply-candidate-name').textContent = state.reply.candidateName || '指定なし';
 }
 
@@ -201,10 +212,6 @@ function updateCandidateLabels() {
 function bindReply() {
   $('reply-candidate').onclick = () => openCandidatePicker('reply');
   $('reply-received').addEventListener('input', updateGenerateEnabled);
-  $('reply-paste').onclick = async () => {
-    try { const t = await navigator.clipboard.readText(); $('reply-received').value = t; updateGenerateEnabled(); }
-    catch (e) { toast('貼り付けできませんでした。手で貼り付けてください'); }
-  };
   $('reply-generate').onclick = () => doGenerate('reply');
 }
 
